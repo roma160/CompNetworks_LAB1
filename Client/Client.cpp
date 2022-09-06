@@ -7,11 +7,48 @@ using namespace std;
 
 #define DEFAULT_BUFLEN 512
 
+int getSocketForAdress(const string address, const string port, SOCKET* result)
+{
+    int ret;
+
+    addrinfo specs;
+    ZeroMemory(&specs, sizeof(specs));
+    specs.ai_family = AF_UNSPEC;
+    specs.ai_socktype = SOCK_STREAM;
+    specs.ai_protocol = IPPROTO_TCP;
+
+    // RESOLVING THE HOSTNAME/ADDRESS
+    addrinfo* results_list;
+    if ((ret = getaddrinfo(address.c_str(), port.c_str(), &specs, &results_list)) != 0)
+        return ret;
+
+    SOCKET buff = INVALID_SOCKET;
+    for(addrinfo* i = results_list; i != NULL; i = i->ai_next)
+    {
+        // SOCKET
+        buff = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
+        if (buff == INVALID_SOCKET) return 1;
+
+        // CONNECT
+        if ((ret = connect(buff, i->ai_addr, (int) i->ai_addrlen)) != 0)
+        {
+            closesocket(buff);
+            buff = INVALID_SOCKET;
+	        continue;
+        }
+        break;
+    }
+    freeaddrinfo(results_list);
+    if (buff == INVALID_SOCKET) return 1;
+
+    *result = buff;
+    return 0;
+}
+
 int main()
 {
-    cout << "g";
-
     // https://stackoverflow.com/questions/39931347/simple-http-get-with-winsock
+    // https://docs.microsoft.com/ru-ru/windows/win32/winsock/complete-client-code
 
     // WinSock library init
     WSADATA wsaData;
@@ -20,45 +57,11 @@ int main()
         return 1;
     }
 
-    //--------------------------------
-    // Setup the hints address info structure
-    // which is passed to the getaddrinfo() function
-    struct addrinfo* result = NULL, hints;
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-
-    if (getaddrinfo("google.com", "80", &hints, &result) != 0) {
-        cout << "getaddrinfo failed.\n";
-        WSACleanup();
-        return 1;
-    }
 
     //// Attempt to connect to an address until one succeeds
-    SOCKET ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    for (struct addrinfo* ptr = result; ptr != NULL; ptr = ptr->ai_next) {
-
-        // Create a SOCKET for connecting to server
-        ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-        if (ConnectSocket == INVALID_SOCKET) {
-            cout << "socket failed.\n";
-            WSACleanup();
-            return 1;
-        }
-
-        // Connect to server.
-        if (connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR) {
-            closesocket(ConnectSocket);
-            ConnectSocket = INVALID_SOCKET;
-            continue;
-        }
-        break;
-    }
-    freeaddrinfo(result);
-
-    if (ConnectSocket == INVALID_SOCKET) {
-        cout << "Unable to connect to server!\n";
+    SOCKET ConnectSocket = INVALID_SOCKET;
+    if(getSocketForAdress("localhost", "27015", &ConnectSocket) != 0)
+    {
         WSACleanup();
         return 1;
     }
@@ -66,7 +69,7 @@ int main()
     // Send an initial buffer
     const char* sendbuf = "GET /search?q=hello HTTP/1.1\r\n"
         "Host: google.com\r\n"
-        "Accept : */*\r\n\r\n";
+        "Accept : */777*\r\n\r\n";
     if (send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0) == SOCKET_ERROR) {
         printf("send failed with error: %d\n", WSAGetLastError());
         closesocket(ConnectSocket);
