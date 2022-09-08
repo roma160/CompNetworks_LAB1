@@ -3,6 +3,8 @@
 #include <ws2tcpip.h>
 #include <string>
 
+#include "WinSockWrapper.h"
+
 using namespace std;
 
 #define DEFAULT_BUFLEN 512
@@ -50,21 +52,10 @@ int main()
     // https://stackoverflow.com/questions/39931347/simple-http-get-with-winsock
     // https://docs.microsoft.com/ru-ru/windows/win32/winsock/complete-client-code
 
-    // WinSock library init
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        cout << "WSAStartup failed.\n";
-        return 1;
-    }
-
+    WinSockWrapper::ensureInit();
 
     //// Attempt to connect to an address until one succeeds
-    SOCKET ConnectSocket = INVALID_SOCKET;
-    if(getSocketForAdress("localhost", "27015", &ConnectSocket) != 0)
-    {
-        WSACleanup();
-        return 1;
-    }
+    SOCKET ConnectSocket = WinSockWrapper::getSocketForAddress("localhost", "27015");
 
     // Send an initial buffer
     const char* sendbuf = "GET /search?q=hello HTTP/1.1\r\n"
@@ -89,4 +80,6 @@ int main()
             break;
         }
     } while (true);
+
+    WinSockWrapper::close();
 }
