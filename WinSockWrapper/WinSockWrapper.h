@@ -2,6 +2,8 @@
 
 #include <string>
 
+#define PORT_NUMBER "1031"
+
 class WinSockWrapper
 {
 private:

@@ -9,44 +9,6 @@ using namespace std;
 
 #define DEFAULT_BUFLEN 512
 
-int getSocketForAdress(const string address, const string port, SOCKET* result)
-{
-    int ret;
-
-    addrinfo specs;
-    ZeroMemory(&specs, sizeof(specs));
-    specs.ai_family = AF_UNSPEC;
-    specs.ai_socktype = SOCK_STREAM;
-    specs.ai_protocol = IPPROTO_TCP;
-
-    // RESOLVING THE HOSTNAME/ADDRESS
-    addrinfo* results_list;
-    if ((ret = getaddrinfo(address.c_str(), port.c_str(), &specs, &results_list)) != 0)
-        return ret;
-
-    SOCKET buff = INVALID_SOCKET;
-    for(addrinfo* i = results_list; i != NULL; i = i->ai_next)
-    {
-        // SOCKET
-        buff = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
-        if (buff == INVALID_SOCKET) return 1;
-
-        // CONNECT
-        if ((ret = connect(buff, i->ai_addr, (int) i->ai_addrlen)) != 0)
-        {
-            closesocket(buff);
-            buff = INVALID_SOCKET;
-	        continue;
-        }
-        break;
-    }
-    freeaddrinfo(results_list);
-    if (buff == INVALID_SOCKET) return 1;
-
-    *result = buff;
-    return 0;
-}
-
 int main()
 {
     // https://stackoverflow.com/questions/39931347/simple-http-get-with-winsock
@@ -55,7 +17,7 @@ int main()
     WinSockWrapper::ensureInit();
 
     //// Attempt to connect to an address until one succeeds
-    SOCKET ConnectSocket = WinSockWrapper::getSocketForAddress("localhost", "27015");
+    SOCKET ConnectSocket = WinSockWrapper::getSocketForAddress("localhost", PORT_NUMBER);
 
     // Send an initial buffer
     const char* sendbuf = "GET /search?q=hello HTTP/1.1\r\n"
