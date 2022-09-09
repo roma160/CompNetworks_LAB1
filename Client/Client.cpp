@@ -20,14 +20,16 @@ int main()
     SOCKET ConnectSocket = WinSockWrapper::getSocketForAddress("localhost", PORT_NUMBER);
 
     // Send an initial buffer
-    const char* sendbuf = "GET /search?q=hello HTTP/1.1\r\n"
-        "Host: google.com\r\n"
-        "Accept : */777*\r\n\r\n";
-    if (send(ConnectSocket, sendbuf, (int)strlen(sendbuf), 0) == SOCKET_ERROR) {
-        printf("send failed with error: %d\n", WSAGetLastError());
-        closesocket(ConnectSocket);
-        WSACleanup();
-        return 1;
+    string buff;
+    while(true)
+    {
+        getline(cin, buff);
+	    if (send(ConnectSocket, buff.c_str(), buff.size(), 0) == SOCKET_ERROR) {
+	    	printf("send failed with error: %d\n", WSAGetLastError());
+	    	closesocket(ConnectSocket);
+	    	WSACleanup();
+	    	return 1;
+	    }
     }
 
     // Receive until the peer closes the connection
