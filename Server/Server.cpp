@@ -13,6 +13,7 @@
 
 using namespace std;
 
+//TODO: handle errors on socket opening
 class Server
 {
 private:
@@ -46,22 +47,26 @@ private:
 
 	static void threadFunction(SOCKET clientSocket, int threadId, mutex* workedUpThreadsMutex, queue<int>* workedUpThreads)
     {
-        constexpr int buffer_size = 256;
-        char receive_buff[buffer_size];
+        string receive_buff, response_buff;
+        receive_buff.reserve(MAX_COMMAND_SIZE);
+
         int bytes_transmitted;
         do
         {
-            bytes_transmitted = recv(clientSocket, receive_buff, buffer_size, 0);
-            if(bytes_transmitted > 0)
-            {
-                cout << "Got new bytes (" << bytes_transmitted << "):\n" << receive_buff<<"\n\n";
+            bytes_transmitted = recv(clientSocket, (char*) receive_buff.c_str(), 1, 0);
+            if (bytes_transmitted <= 0) continue;
 
-                bytes_transmitted = send(clientSocket, receive_buff, buffer_size, 0);
-                if(bytes_transmitted == SOCKET_ERROR)
-                {
-                    closesocket(clientSocket);
-                    throw runtime_error("send failed with error: " + to_string(WSAGetLastError()));
-                }
+            receive_buff.resize(receive_buff[0]);
+            bytes_transmitted = recv(clientSocket, (char*) receive_buff.c_str(), receive_buff[0], 0);
+            if (bytes_transmitted <= 0) continue;
+
+            response_buff = commandHandler(receive_buff.substr(1));
+            response_buff = (char) response_buff.size() + response_buff;
+            bytes_transmitted = send(clientSocket, response_buff.c_str(), response_buff.size(), 0);
+            if (bytes_transmitted == SOCKET_ERROR)
+            {
+                closesocket(clientSocket);
+                throw runtime_error("send failed with error: " + to_string(WSAGetLastError()));
             }
         } while (bytes_transmitted > 0);
 
@@ -75,6 +80,10 @@ private:
         workedUpThreadsMutex->lock();
         workedUpThreads->push(threadId);
         workedUpThreadsMutex->unlock();
+    }
+    static string commandHandler(const string command)
+    {
+        return command;
     }
 
     int getNewThreadId()

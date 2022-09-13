@@ -3,6 +3,7 @@
 #include <string>
 
 #define PORT_NUMBER "1031"
+#define MAX_COMMAND_SIZE 255
 
 class WinSockWrapper
 {
