@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\MessagingModel">
+      <UniqueIdentifier>{eeaf2a1a-b6ff-4d5d-802d-4989acafc754}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MessagingModel">
+      <UniqueIdentifier>{20d77cf2-54c6-4ec3-bb49-c226d135c5d1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -24,6 +30,12 @@
     <ClInclude Include="WinSockWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AServer.h">
+      <Filter>Header Files\MessagingModel</Filter>
+    </ClInclude>
+    <ClInclude Include="AClient.h">
+      <Filter>Header Files\MessagingModel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -31,6 +43,12 @@
     </ClCompile>
     <ClCompile Include="WinSockWrapper.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AServer.cpp">
+      <Filter>Source Files\MessagingModel</Filter>
+    </ClCompile>
+    <ClCompile Include="AClient.cpp">
+      <Filter>Source Files\MessagingModel</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
