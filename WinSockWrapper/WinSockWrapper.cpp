@@ -31,32 +31,68 @@ void WinSockWrapper::close()
 	was_initialised = false;
 }
 
+
+WinSockWrapper::SocketResult::SocketResult(ResultType type)
+{ this->type = type; }
+
+WinSockWrapper::SocketResult::SocketResult(int error_code)
+{
+    this->error_code = error_code;
+    type = ERR;
+}
+
+WinSockWrapper::SocketResult WinSockWrapper::SocketResult::Ok()
+{ return SocketResult(OK); }
+
+WinSockWrapper::SocketResult WinSockWrapper::SocketResult::Shutdown()
+{ return SocketResult(SHUTDOWN); }
+
+WinSockWrapper::SocketResult WinSockWrapper::SocketResult::Err(int code)
+{ return SocketResult(code); }
+
+
 WinSockWrapper::SocketResult WinSockWrapper::err_send(const SOCKET* socket, const char* data, int data_len)
 {
-    int result, i = 0;
+    int result, code, i = 0;
     do
     {
 	    result = send(*socket, data, data_len, 0);
+        code = WSAGetLastError();
+
+#ifdef _DEBUG
         cout<< "s" << result << "\n";
-        if (result == data_len) return OK;
-        if (result == WSAESHUTDOWN) return SHUTDOWN;
+#endif
+
+        if (result == data_len) return SocketResult::Ok();
+        // https://learn.microsoft.com/uk-ua/windows/win32/winsock/windows-sockets-error-codes-2?redirectedfrom=MSDN
+        if (result == 0 || code == WSAESHUTDOWN || code == WSAECONNRESET)
+            return SocketResult::Shutdown();
+
         i++;
     } while (i < RETRY_NUM);
-    return ERR;
+    return SocketResult::Err(code);
 }
 
 WinSockWrapper::SocketResult WinSockWrapper::err_recv(const SOCKET* socket, char* data, int data_len)
 {
-    int result, i = 0;
+    int result, code, i = 0;
     do
     {
         result = recv(*socket, data, data_len, 0);
+        code = WSAGetLastError();
+
+#ifdef _DEBUG
         cout << "r" << result << "\n";
-        if (result == data_len) return OK;
-        if (result == WSAESHUTDOWN || result == 0) return SHUTDOWN;
+#endif
+
+        if (result == data_len) return SocketResult::Ok();
+        // https://learn.microsoft.com/uk-ua/windows/win32/winsock/windows-sockets-error-codes-2?redirectedfrom=MSDN
+        if (result == 0 || result == WSAESHUTDOWN || code == WSAECONNRESET)
+            return SocketResult::Shutdown();
+
         i++;
     } while (i < RETRY_NUM);
-    return ERR;
+    return SocketResult::Err(code);
 }
 
 
@@ -142,19 +178,12 @@ void AServer::ConnectedClient::threadFunction(ConnectedClient* self, AServer* se
 
     auto handle_res = [self, server](WinSockWrapper::SocketResult result)
     {
-        if (result == WinSockWrapper::OK) return false;
+        if (result.type == WinSockWrapper::SocketResult::OK) return false;
 
         threadFinish(self, server);
 
-        if(result == WinSockWrapper::ERR)
-        {
-#ifdef _DEBUG
-            const int buff = WSAGetLastError();
-            throw runtime_error(to_string(buff));
-#else
-            throw runtime_error(to_string(WSAGetLastError()));
-#endif
-        }
+        if(result.type == WinSockWrapper::SocketResult::ERR)
+            throw runtime_error(to_string(result.error_code));
 
         return true;
     };
@@ -342,12 +371,12 @@ void AClient::loop()
 
     auto handle_res = [this](WinSockWrapper::SocketResult result)
     {
-        if (result == WinSockWrapper::OK) return false;
+        if (result.type == WinSockWrapper::SocketResult::OK) return false;
 
         loopFinish();
 
-        if(result == WinSockWrapper::ERR)
-            throw runtime_error(to_string(WSAGetLastError()));
+        if (result.type == WinSockWrapper::SocketResult::ERR)
+            throw runtime_error(to_string(result.error_code));
 
         return true;
     };

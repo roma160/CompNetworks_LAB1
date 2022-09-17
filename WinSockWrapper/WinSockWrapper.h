@@ -24,8 +24,22 @@ public:
 	static void ensureInit();
 	static void close();
 
-	enum SocketResult
-	{ OK, SHUTDOWN, ERR };
+	struct SocketResult
+	{
+		enum ResultType
+		{ OK, SHUTDOWN, ERR };
+
+		ResultType type;
+		int error_code;
+
+		SocketResult(ResultType type);
+		SocketResult(int error_code);
+
+		static SocketResult Ok();
+		static SocketResult Shutdown();
+		static SocketResult Err(int code);
+	};
+
 	static SocketResult err_send(const SOCKET* socket, const char* data, int data_len);
 	static SocketResult err_recv(const SOCKET* socket, char* data, int data_len);
 
