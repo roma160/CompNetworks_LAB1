@@ -15,8 +15,7 @@ public:
 
 		~ConnectionContext() override
 		{
-			delete& n;
-			cout << "Success";
+			cout << "Removed finished client!\n";
 		}
 	};
 

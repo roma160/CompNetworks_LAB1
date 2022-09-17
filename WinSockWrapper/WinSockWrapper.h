@@ -4,8 +4,8 @@
 #include <mutex>
 #include <queue>
 #include <string>
-#include <thread>
-#include <vector>
+#include <set>
+#include <atomic>
 
 #define PORT_NUMBER "1031"
 #define MAX_COMMAND_SIZE 255
@@ -46,22 +46,22 @@ private:
 
 	struct ConnectedClient
 	{
-		int threadId;
+		std::atomic<bool> working;
 		std::thread* thread;
 
 		SOCKET socket;
 		AConnectionContext** context;
 
-		ConnectedClient(int threadId, SOCKET socket, AServer* self);
+		ConnectedClient(SOCKET socket, AServer* server);
 		~ConnectedClient();
 
-		static void threadFunction(int threadId, AServer* self);
-		static void threadFinish(int threadId, AServer* self, ConnectedClient* client);
+		static void threadFunction(ConnectedClient* self, AServer* server);
+		static void threadFinish(ConnectedClient* self, AServer* server);
 	};
-	std::vector<ConnectedClient*> connectedClients;
+	std::set<ConnectedClient*> connectedClients;
 
 	std::mutex workedUpThreadsMutex;
-	std::queue<int> workedUpThreads;
+	std::queue<ConnectedClient*> workedUpThreads;
 
 	bool is_working = false;
 
@@ -87,9 +87,22 @@ private:
 	void loopFinish();
 
 public:
+	class MessageHandlerResponse
+	{
+	private:
+		void init(bool is_shutdown, std::string value);
+
+	public:
+		bool is_shutdown;
+		std::string value;
+
+		MessageHandlerResponse(std::string value = "");
+		MessageHandlerResponse(bool is_shutdown, std::string value = "");
+	};
+
 	AClient(std::string connectionAddress = "localhost", std::string connectionPort = PORT_NUMBER);
 	
 	void loop();
 
-	virtual std::string messageHandler(const std::string message) = 0;
+	virtual MessageHandlerResponse messageHandler(const std::string message) = 0;
 };
