@@ -39,6 +39,9 @@
     <ClInclude Include="APeer.h">
       <Filter>Header Files\MessagingModel</Filter>
     </ClInclude>
+    <ClInclude Include="APeerManager.h">
+      <Filter>Header Files\MessagingModel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -54,6 +57,9 @@
       <Filter>Source Files\MessagingModel</Filter>
     </ClCompile>
     <ClCompile Include="APeer.cpp">
+      <Filter>Source Files\MessagingModel</Filter>
+    </ClCompile>
+    <ClCompile Include="APeerManager.cpp">
       <Filter>Source Files\MessagingModel</Filter>
     </ClCompile>
   </ItemGroup>

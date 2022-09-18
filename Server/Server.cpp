@@ -7,28 +7,28 @@ using namespace std;
 class Server: public AServer
 {
 public:
-	Server(std::string address = "", std::string port = PORT_NUMBER) : AServer(address, port){}
+	Server(std::string address = "", std::string port = PORT_NUMBER) : AServer(move(address), move(port)){}
 
-	struct ConnectionContext: AConnectionContext
+	struct Context: APeer::AContext
 	{
 		int n = 0;
 
-		~ConnectionContext() override
+		virtual ~Context()
 		{
 			cout << "Removed finished client!\n";
 		}
 	};
 
-	std::string messageHandler(AConnectionContext** _context, std::string message) override
+	APeer::HandlerResponse messageHandler(APeer::AContext** _context, std::string message) override
 	{
 		if(*_context == nullptr)
 		{
 			cout << "New client!\n";
-			*_context = new ConnectionContext();
+			*_context = new Context();
 		}
 
 		cout << "Received message from a client: \n" << message<<"\n";
-		ConnectionContext* context = (ConnectionContext*)*_context;
+		Context* context = (Context*)*_context;
 		context->n += 1;
 		return "This is " + to_string(context->n) + "th message.";
 	}

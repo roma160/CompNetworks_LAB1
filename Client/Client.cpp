@@ -9,21 +9,16 @@ class Client: public AClient
 {
 public:
     Client(std::string connectionAddress = "localhost", std::string connectionPort = PORT_NUMBER):
-		AClient(connectionAddress, connectionPort) {}
+		AClient(move(connectionAddress), move(connectionPort)) {}
 
-    HandlerRespose messageHandler(AContext* state, std::string message) override
+    HandlerResponse messageHandler(AContext** context, std::string message) override
     {
         cout << "Received response from server:\n" << message << "\n";
         cout << "Enter your message (or q to quit): ";
         string ret;
         getline(cin, ret);
-        if (ret == "q") return HandlerRespose(true, "");
+        if (ret == "q") return HandlerResponse(true, string(""));
         return ret;
-    }
-
-    void OnErrorStop(int code) override
-    {
-        cout << "Error encountered. Shutting down...\n";
     }
 };
 
@@ -36,4 +31,5 @@ int main()
     cl.loop();
 
     WinSockWrapper::close();
+    cin.get();
 }

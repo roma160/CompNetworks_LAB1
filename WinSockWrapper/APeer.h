@@ -1,64 +1,70 @@
+// ReSharper disable CppInconsistentNaming
 #pragma once
-#include "WinSockWrapper.h"
+#include <atomic>
 #include <memory>
 
-#define PORT_NUMBER "1031"
-#define MAX_COMMAND_SIZE 255
-#define RETRY_NUM 5
+#include "WinSockWrapper.h"
 
-static const char START_MESSAGE[15] = "CONNECT_CLIENT";
-constexpr int START_MESSAGE_SIZE = sizeof(START_MESSAGE);
+static constexpr char PORT_NUMBER[5] = "1031";
+static constexpr int MAX_COMMAND_SIZE = 255;
+static constexpr int RETRY_NUM = 5;
 
-class APeer
+static constexpr char START_MESSAGE[15] = "CONNECT_CLIENT";
+static constexpr int START_MESSAGE_SIZE = sizeof(START_MESSAGE);
+
+class APeer  // NOLINT(cppcoreguidelines-special-member-functions)
 {
 public:
-	struct AContext
-	{ virtual ~AContext() = 0; };
+	struct AContext  // NOLINT(cppcoreguidelines-special-member-functions)
+	{ virtual ~AContext() = 0; } **context;
 
 protected:
-	struct AState
-	{
-		SOCKET socket;
-		AContext** context;
-
-		virtual ~AState();
-	};
+	std::atomic<bool> working;
+	SOCKET socket;
 
 	struct ASockResult
 	{
 		enum Type { OK, SHUTDOWN, ERR } type;
-		ASockResult(Type type) : type(type){}
+		ASockResult(Type type) : type(type) {}
 	};
-	struct ErrSockResult: ASockResult
+	struct ErrSockResult : ASockResult
 	{
 		int code;
 		ErrSockResult(int code) : ASockResult(ERR), code(code) {}
 	};
-	enum CommunicationType { SEND, RECEIVE };
-	static std::unique_ptr<ASockResult> communicationWrapper(
-		APeer* self, AState* state, CommunicationType type, char* data, int data_len);
+	enum ContactType { SEND, RECEIVE };
+	std::unique_ptr<ASockResult> contact(
+		ContactType type, char* data, int data_len) const;
 
-	static std::unique_ptr<ASockResult> messagingIteration(APeer* self, AState* state, std::string& receive_buff, std::string& response_buff);
-	virtual void messagingFinish(AState* state);
+	friend class APeerManager;
+	static std::unique_ptr<ASockResult> contact(
+		const SOCKET& socket, ContactType type, char* data, int data_len);
+
+	virtual std::unique_ptr<ASockResult> loopStart(std::string& receiveBuffer, std::string& sendBuffer) = 0;
+	std::unique_ptr<ASockResult> loopIterBody(std::string& receiveBuffer, std::string& sendBuffer);
+	virtual void loopEnd(std::unique_ptr<ASockResult> reason);
+
+	void initNonSocket();
 
 public:
-	APeer();
+	APeer(SOCKET socket);
+	APeer(std::string connectionAddress, std::string connectionPort);
+	virtual ~APeer();
 
-	virtual void loop() = 0;
+	void loop();
 
-	struct HandlerRespose
+	struct HandlerResponse
 	{
 		std::string message;
-
 		enum Flags
 		{
-			MESSAGE = 1<<0,
-			SHUTDOWN = 1<<1
+			EMPTY = 0,
+			MESSAGE = 1 << 0,
+			SHUTDOWN = 1 << 1
 		} flags;
 
-		HandlerRespose(std::string message);
-		HandlerRespose(bool is_shutdown, std::string message);
+		HandlerResponse(std::string message);
+		HandlerResponse(bool is_shutdown, std::string message);
 	};
-	virtual HandlerRespose messageHandler(AContext* state, std::string message);
+	virtual HandlerResponse messageHandler(AContext** context, std::string message) = 0;
 };
-

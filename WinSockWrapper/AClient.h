@@ -2,22 +2,11 @@
 #include "APeer.h"
 #include "WinSockWrapper.h"
 
-class AClient : protected APeer
+class AClient : public APeer
 {
-private:
-	struct State : AState
-	{
-		bool working = false;
-
-		State(std::string connectionAddress, std::string connectionPort);
-	} state;
-
 protected:
-	virtual void OnErrorStop(int code) = 0;
+	std::unique_ptr<ASockResult> loopStart(std::string& receiveBuffer, std::string& sendBuffer) override;
 
 public:
-
 	AClient(std::string connectionAddress = "localhost", std::string connectionPort = PORT_NUMBER);
-
-	void loop() override;
 };
