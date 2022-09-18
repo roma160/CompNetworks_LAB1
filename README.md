@@ -1,5 +1,10 @@
 # LAB1 Variant №6 Mishcuk Roman
 
+## About
+This is the repository, containing the solution of the first laboratory task of Computer networks course.
+In it the abstract multithreaded winsock communication model was implemented.
+The following subtopics describe the communication model used.
+
 ## Постановка задачі
 
 Потрібно:
