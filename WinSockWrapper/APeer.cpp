@@ -106,7 +106,11 @@ APeer::APeer(std::string connectionAddress, std::string connectionPort)
     initNonSocket();
 }
 
-APeer::~APeer() { delete (*context); }
+APeer::~APeer()
+{
+	delete *context;
+    delete context;
+}
 
 void APeer::loop()
 {

@@ -44,7 +44,11 @@ APeerManager::Peer::Peer(APeerManager* manager, SOCKET socket):
     thread = new std::thread(&Peer::loop, this);
 }
 
-APeerManager::Peer::~Peer() { thread->join(); }
+APeerManager::Peer::~Peer()
+{
+	thread->join();
+    delete thread;
+}
 
 APeer::HandlerResponse APeerManager::Peer::messageHandler(AContext** context, std::string message)
 { return manager->messageHandler(context, move(message)); }
