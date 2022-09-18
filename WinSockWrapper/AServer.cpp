@@ -7,77 +7,12 @@
 using namespace std;
 
 
-// AServer -----
-AServer::AConnectionContext::~AConnectionContext() { }
-
-AServer::ConnectedClient::ConnectedClient(SOCKET socket, AServer* server)
-{
-    this->socket = socket;
-    context = new AConnectionContext * (nullptr);
-
-    thread = new std::thread(threadFunction, this, server);
-}
-
-AServer::ConnectedClient::~ConnectedClient()
-{
-    delete* context;
-    delete thread;
-}
-
-//AServer::ConnectedClient& AServer::ConnectedClient::operator=(const ConnectedClient& to_copy)
-//{
-//    threadId = to_copy.threadId;
-//    thread = to_copy.thread;
-//    socket = to_copy.socket;
-//    context = 
-//}
-
 void AServer::ConnectedClient::threadFunction(ConnectedClient* self, AServer* server)
 {
     // Variables init
-    self->working = true;
-
-    string receive_buff, response_buff;
-    receive_buff.reserve(MAX_COMMAND_SIZE);
-    response_buff.reserve(MAX_COMMAND_SIZE);
-
-    auto handle_res = [self, server](WinSockWrapper::SocketResult result)
-    {
-        if (result.type == WinSockWrapper::SocketResult::OK) return false;
-
-        threadFinish(self, server);
-
-        if (result.type == WinSockWrapper::SocketResult::ERR)
-            throw runtime_error(to_string(result.error_code));
-
-        return true;
-    };
 
     // Exchanging START_MESSAGEs 
-    receive_buff.resize(START_MESSAGE_SIZE);
-    if (handle_res(WinSockWrapper::err_recv(
-        &self->socket, (char*)receive_buff.c_str(), 1)))
-        return;
-    if (receive_buff[0] != START_MESSAGE_SIZE)
-    {
-        threadFinish(self, server);
-        return;
-    }
-    if (handle_res(WinSockWrapper::err_recv(
-        &self->socket, (char*)receive_buff.c_str(), START_MESSAGE_SIZE)))
-        return;
-    if (!receive_buff.compare(START_MESSAGE))
-    {
-        threadFinish(self, server);
-        return;
-    }
-
-    if (handle_res(WinSockWrapper::err_send(
-        &self->socket, (const char*)&START_MESSAGE_SIZE, 1)))
-        return;
-    if (handle_res(WinSockWrapper::err_send(
-        &self->socket, START_MESSAGE, START_MESSAGE_SIZE)))
-        return;
+    
 
     // The main messaging loop
     while (self->working)
@@ -106,18 +41,65 @@ void AServer::ConnectedClient::threadFunction(ConnectedClient* self, AServer* se
     self->working = false;
 }
 
-void AServer::ConnectedClient::threadFinish(ConnectedClient* self, AServer* server)
+AServer::ClientState::ClientState(SOCKET socket, AServer* server) : AState()
 {
-    // shutdown the connection since we're done
-    if (shutdown(self->socket, SD_SEND) == SOCKET_ERROR) {
-        throw runtime_error("shutdown failed with error: " + to_string(WSAGetLastError()));
-    }
-    closesocket(self->socket);
+    this->socket(socket);
+    this->server(server);
+    context(nullptr);
+    thread = new std::thread(threadFunction, this, server);
+}
 
-    // indicating, that we are finished
+AServer::ClientState::~ClientState()
+{
     server->workedUpThreadsMutex.lock();
-    server->workedUpThreads.push(self);
+    server->workedUpThreads.push(this);
     server->workedUpThreadsMutex.unlock();
+}
+
+void AServer::ClientState::threadFunction(ClientState* self, AServer* server)
+{
+    self->working = true;
+
+    unique_ptr<ASockResult> buff_res;
+
+    string receive_buff, response_buff;
+    receive_buff.reserve(MAX_COMMAND_SIZE);
+    response_buff.reserve(MAX_COMMAND_SIZE);
+    receive_buff.resize(START_MESSAGE_SIZE);
+
+    if ((buff_res = communicationWrapper(server, self, RECEIVE, (char*)receive_buff.c_str(), 1)
+        )->type != ASockResult::OK || receive_buff[0] != START_MESSAGE_SIZE)
+    {
+        if (buff_res->type == ASockResult::ERR)
+            self->OnErrorStop(((ErrSockResult*)buff_res.get())->code);
+        else if(buff_res->type == ASockResult::ERR)
+        delete self;
+        return;
+    }
+
+    if (handle_res(WinSockWrapper::err_recv(
+        &self->socket, (char*)receive_buff.c_str(), 1)))
+        return;
+    if (receive_buff[0] != START_MESSAGE_SIZE)
+    {
+        threadFinish(self, server);
+        return;
+    }
+    if (handle_res(WinSockWrapper::err_recv(
+        &self->socket, (char*)receive_buff.c_str(), START_MESSAGE_SIZE)))
+        return;
+    if (!receive_buff.compare(START_MESSAGE))
+    {
+        threadFinish(self, server);
+        return;
+    }
+
+    if (handle_res(WinSockWrapper::err_send(
+        &self->socket, (const char*)&START_MESSAGE_SIZE, 1)))
+        return;
+    if (handle_res(WinSockWrapper::err_send(
+        &self->socket, START_MESSAGE, START_MESSAGE_SIZE)))
+        return;
 }
 
 void AServer::resolveAddress(const string& address, const string& port, addrinfo*& result)
@@ -140,7 +122,7 @@ void AServer::resolveAddress(const string& address, const string& port, addrinfo
 
 void AServer::connectNewClient(SOCKET socket)
 {
-    connectedClients.insert(new ConnectedClient(socket, this));
+    connectedClients.insert(new ClientState(socket, this));
 }
 
 AServer::AServer(std::string address, std::string port)

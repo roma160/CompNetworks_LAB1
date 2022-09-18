@@ -6,34 +6,30 @@
 #include <set>
 #include <atomic>
 
+#include "APeer.h"
 
-class AServer
+
+class AServer: APeer
 {
-public:
-	struct AConnectionContext
-	{ virtual ~AConnectionContext(); };
-
 private:
 	SOCKET listenSocket = INVALID_SOCKET;
 
-	struct ConnectedClient
+	struct ClientState: AState
 	{
+		AServer* server;
+
 		std::atomic<bool> working;
 		std::thread* thread;
 
-		SOCKET socket;
-		AConnectionContext** context;
+		ClientState(SOCKET socket, AServer* server);
+		~ClientState();
 
-		ConnectedClient(SOCKET socket, AServer* server);
-		~ConnectedClient();
-
-		static void threadFunction(ConnectedClient* self, AServer* server);
-		static void threadFinish(ConnectedClient* self, AServer* server);
+		static void threadFunction(ClientState* self, AServer* server);
+		virtual void OnErrorStop(int code) = 0;
 	};
-	std::set<ConnectedClient*> connectedClients;
-
+	std::set<ClientState*> connectedClients;
 	std::mutex workedUpThreadsMutex;
-	std::queue<ConnectedClient*> workedUpThreads;
+	std::queue<ClientState*> workedUpThreads;
 
 	bool is_working = false;
 
@@ -44,7 +40,7 @@ private:
 public:
 	AServer(std::string address = "", std::string port = PORT_NUMBER);
 
-	void loop();
+	void loop() override;
 
 	virtual std::string messageHandler(AConnectionContext** context, std::string message) = 0;
 };

@@ -163,6 +163,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="APeer.h" />
     <ClInclude Include="AServer.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -170,6 +171,7 @@
     <ClInclude Include="AClient.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="APeer.cpp" />
     <ClCompile Include="AServer.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -11,14 +11,19 @@ public:
     Client(std::string connectionAddress = "localhost", std::string connectionPort = PORT_NUMBER):
 		AClient(connectionAddress, connectionPort) {}
 
-    MessageHandlerResponse messageHandler(const std::string message) override
+    HandlerRespose messageHandler(AContext* state, std::string message) override
     {
         cout << "Received response from server:\n" << message << "\n";
         cout << "Enter your message (or q to quit): ";
         string ret;
         getline(cin, ret);
-        if (ret == "q") return MessageHandlerResponse(true);
+        if (ret == "q") return HandlerRespose(true, "");
         return ret;
+    }
+
+    void OnErrorStop(int code) override
+    {
+        cout << "Error encountered. Shutting down...\n";
     }
 };
 
