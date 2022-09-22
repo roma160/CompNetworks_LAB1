@@ -4,14 +4,16 @@
 using namespace std;
 
 
-void APeerManager::Peer::loopEnd(std::unique_ptr<ASockResult> reason)
+std::unique_ptr<APeer::ASockResult> APeerManager::Peer::loopEnd(std::unique_ptr<ASockResult> reason)
 {
-    APeer::loopEnd(move(reason));
+    reason = APeer::loopEnd(move(reason));
 
     // Signalling work end
     manager->finishedPeersMutex.lock();
     manager->finishedPeers.push(this);
     manager->finishedPeersMutex.unlock();
+
+    return reason;
 }
 
 std::unique_ptr<APeer::ASockResult> APeerManager::Peer::loopStart(std::string& receiveBuffer, std::string& sendBuffer)
@@ -38,10 +40,11 @@ std::unique_ptr<APeer::ASockResult> APeerManager::Peer::loopStart(std::string& r
 }
 
 APeerManager::Peer::Peer(APeerManager* manager, SOCKET socket):
-	APeer(socket), manager(manager)
+	APeer(), manager(manager)
 {
     // https://stackoverflow.com/questions/10998780/stdthread-calling-method-of-class
     thread = new std::thread(&Peer::loop, this);
+    setSocket(socket);
 }
 
 APeerManager::Peer::~Peer()
@@ -67,8 +70,6 @@ void APeerManager::resolveAddress(const std::string& address, const std::string&
         address == "" ? NULL : address.c_str(),
         port.c_str(), &specs, &result
     );
-    if (ret != 0) throw runtime_error(
-        "getaddrinfo failed with error " + to_string(ret));
 }
 
 APeerManager::APeerManager(std::string address, std::string port): working(false)

@@ -20,7 +20,7 @@ protected:
 		APeerManager* manager;
 		std::thread* thread;
 
-		void loopEnd(std::unique_ptr<ASockResult> reason) override;
+		std::unique_ptr<ASockResult> loopEnd(std::unique_ptr<ASockResult> reason) override;
 		std::unique_ptr<ASockResult> loopStart(std::string& receiveBuffer, std::string& sendBuffer) override;
 
 	public:

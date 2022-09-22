@@ -22,5 +22,5 @@ std::unique_ptr<APeer::ASockResult> AClient::loopStart(std::string& receiveBuffe
     return buffRes;
 }
 
-AClient::AClient(std::string connectionAddress, std::string connectionPort):
-	APeer(move(connectionAddress), move(connectionPort)) {}
+AClient::AClient(std::string connectionAddress, std::string connectionPort): APeer()
+{ setSocket(move(connectionAddress), move(connectionPort)); }

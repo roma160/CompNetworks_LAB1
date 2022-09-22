@@ -44,15 +44,13 @@ SOCKET WinSockWrapper::getSocketForAddress(string address, string port)
     // RESOLVING THE HOSTNAME/ADDRESS
     addrinfo* results_list;
     if ((ret = getaddrinfo(address.c_str(), port.c_str(), &specs, &results_list)) != 0)
-        throw runtime_error("Error when getting list of sockets: " + to_string(ret));
+        return INVALID_SOCKET;
 
     SOCKET buff = INVALID_SOCKET;
     for (addrinfo* i = results_list; i != NULL; i = i->ai_next)
     {
         // SOCKET
         buff = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
-        if (buff == INVALID_SOCKET)
-            throw runtime_error("Error when trying to use socket: " + to_string(ret));
 
         // CONNECT
         if ((ret = connect(buff, i->ai_addr, (int)i->ai_addrlen)) != 0)

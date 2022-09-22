@@ -42,16 +42,16 @@ protected:
 
 	virtual std::unique_ptr<ASockResult> loopStart(std::string& receiveBuffer, std::string& sendBuffer) = 0;
 	std::unique_ptr<ASockResult> loopIterBody(std::string& receiveBuffer, std::string& sendBuffer);
-	virtual void loopEnd(std::unique_ptr<ASockResult> reason);
-
-	void initNonSocket();
+	virtual std::unique_ptr<ASockResult> loopEnd(std::unique_ptr<ASockResult> reason);
 
 public:
-	APeer(SOCKET socket);
-	APeer(std::string connectionAddress, std::string connectionPort);
+	APeer();
 	virtual ~APeer();
 
-	void loop();
+	bool setSocket(SOCKET socket);
+	bool setSocket(std::string connectionAddress, std::string connectionPort);
+
+	std::unique_ptr<ASockResult> loop();
 
 	struct HandlerResponse
 	{

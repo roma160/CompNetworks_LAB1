@@ -79,31 +79,18 @@ unique_ptr<APeer::ASockResult> APeer::loopIterBody(string& receiveBuffer, string
     return buff_res;
 }
 
-void APeer::loopEnd(std::unique_ptr<ASockResult> reason)
+std::unique_ptr<APeer::ASockResult> APeer::loopEnd(std::unique_ptr<ASockResult> reason)
 {
     // Shutting down the connection, since we're done
-    if (shutdown(socket, SD_SEND) == SOCKET_ERROR) {
-        throw runtime_error("shutdown failed with error: " + to_string(WSAGetLastError()));
-    }
+    shutdown(socket, SD_SEND);
     closesocket(socket);
+    return reason;
 }
 
-void APeer::initNonSocket()
+APeer::APeer(): socket(INVALID_SOCKET)
 {
-    context = new AContext*(nullptr);
+    context = new AContext * (nullptr);
     working = false;
-}
-
-APeer::APeer(SOCKET socket): socket(socket)
-{
-	initNonSocket();
-}
-
-APeer::APeer(std::string connectionAddress, std::string connectionPort)
-{
-    WinSockWrapper::ensureInit();
-    socket = WinSockWrapper::getSocketForAddress(move(connectionAddress), move(connectionPort));
-    initNonSocket();
 }
 
 APeer::~APeer()
@@ -112,8 +99,25 @@ APeer::~APeer()
     delete context;
 }
 
-void APeer::loop()
+bool APeer::setSocket(SOCKET socket)
 {
+    this->socket = socket;
+    return socket != INVALID_SOCKET;
+}
+
+bool APeer::setSocket(std::string connectionAddress, std::string connectionPort)
+{
+    WinSockWrapper::ensureInit();
+    const SOCKET buff = WinSockWrapper::getSocketForAddress(
+        move(connectionAddress), move(connectionPort));
+    return setSocket(buff);
+}
+
+std::unique_ptr<APeer::ASockResult> APeer::loop()
+{
+    if(socket == INVALID_SOCKET)
+        return make_unique<ErrSockResult>(INVALID_SOCKET);
+
     working = true;
 
     unique_ptr<ASockResult> buffRes;
@@ -126,10 +130,7 @@ void APeer::loop()
     // Starting
     if ((buffRes = loopStart(receiveBuffer, sendBuffer)
         )->type != ASockResult::OK)
-    {
-        loopEnd(move(buffRes));
-        return;
-    }
+        return loopEnd(move(buffRes));
 
     // The Loop
     while(working)
@@ -140,7 +141,7 @@ void APeer::loop()
     }
 
     // The ending
-    loopEnd(move(buffRes));
+    return loopEnd(move(buffRes));
 }
 
 APeer::HandlerResponse::HandlerResponse(std::string message):
