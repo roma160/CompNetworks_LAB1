@@ -17,14 +17,14 @@ protected:
 	class Peer : public APeer
 	{
 	private:
-		AServer* manager;
+		AServer* server;
 		std::thread* thread;
 
 		std::unique_ptr<ASockResult> loopEnd(std::unique_ptr<ASockResult> reason) override;
 		std::unique_ptr<ASockResult> loopStart(std::string& receiveBuffer, std::string& sendBuffer) override;
 
 	public:
-		Peer(AServer* manager, SOCKET socket);
+		Peer(AServer* server, SOCKET socket);
 		virtual ~Peer();
 
 		HandlerResponse messageHandler(AContext** context, std::string message) override;

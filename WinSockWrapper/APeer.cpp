@@ -1,3 +1,4 @@
+// ReSharper disable CppClangTidyClangDiagnosticCastQual
 #include "pch.h"
 #include "APeer.h"
 
@@ -63,7 +64,7 @@ unique_ptr<APeer::ASockResult> APeer::loopIterBody(string& receiveBuffer, string
         if (response.flags & HandlerResponse::MESSAGE)
         {
             sendBuffer = (char) sendBuffer.size() + sendBuffer;
-            if ((buff_res = contact(SEND, (char*) sendBuffer.c_str(), sendBuffer.size())
+            if ((buff_res = contact(SEND, (char*) sendBuffer.c_str(), static_cast<int>(sendBuffer.size()))
                 )->type != ASockResult::OK)
                 return buff_res;
         }
@@ -72,7 +73,7 @@ unique_ptr<APeer::ASockResult> APeer::loopIterBody(string& receiveBuffer, string
 
     // Answering phase
     sendBuffer = (char) sendBuffer.size() + sendBuffer;
-    if ((buff_res = contact(SEND, (char*) sendBuffer.c_str(), sendBuffer.size())
+    if ((buff_res = contact(SEND, (char*) sendBuffer.c_str(), static_cast<int>(sendBuffer.size()))
         )->type != ASockResult::OK)
         return buff_res;
 
@@ -99,7 +100,7 @@ APeer::~APeer()
     delete context;
 }
 
-bool APeer::setSocket(SOCKET socket)
+bool APeer::setSocket(SOCKET socket)  // NOLINT(clang-diagnostic-shadow)
 {
     this->socket = socket;
     return socket != INVALID_SOCKET;

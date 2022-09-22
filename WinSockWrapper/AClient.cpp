@@ -1,3 +1,4 @@
+// ReSharper disable CppCStyleCast
 #include "pch.h"
 #include "AClient.h"
 

@@ -1,3 +1,5 @@
+// ReSharper disable CppCStyleCast
+// ReSharper disable CppClangTidyClangDiagnosticCastQual
 #include "pch.h"
 #include "AServer.h"
 
@@ -9,9 +11,9 @@ std::unique_ptr<APeer::ASockResult> AServer::Peer::loopEnd(std::unique_ptr<ASock
     reason = APeer::loopEnd(move(reason));
 
     // Signalling work end
-    manager->finishedPeersMutex.lock();
-    manager->finishedPeers.push(this);
-    manager->finishedPeersMutex.unlock();
+    server->finishedPeersMutex.lock();
+    server->finishedPeers.push(this);
+    server->finishedPeersMutex.unlock();
 
     return reason;
 }
@@ -25,7 +27,7 @@ std::unique_ptr<APeer::ASockResult> AServer::Peer::loopStart(std::string& receiv
         )->type != ASockResult::OK || (unsigned char)receiveBuffer[0] != START_MESSAGE_SIZE)
         return buffRes;
     if ((buffRes = contact(RECEIVE, (char*)receiveBuffer.c_str(), START_MESSAGE_SIZE)
-        )->type != ASockResult::OK || !receiveBuffer.compare(START_MESSAGE))
+        )->type != ASockResult::OK || receiveBuffer != START_MESSAGE)
         return buffRes;
 
     // Responding him with the confirmation message
@@ -39,8 +41,8 @@ std::unique_ptr<APeer::ASockResult> AServer::Peer::loopStart(std::string& receiv
     return buffRes;
 }
 
-AServer::Peer::Peer(AServer* manager, SOCKET socket) :
-    APeer(), manager(manager)
+AServer::Peer::Peer(AServer* server, SOCKET socket) :  // NOLINT(clang-diagnostic-shadow-field)
+    APeer(), server(server)
 {
     // https://stackoverflow.com/questions/10998780/stdthread-calling-method-of-class
     thread = new std::thread(&Peer::loop, this);
@@ -53,14 +55,14 @@ AServer::Peer::~Peer()
     delete thread;
 }
 
-APeer::HandlerResponse AServer::Peer::messageHandler(AContext** context, std::string message)
+APeer::HandlerResponse AServer::Peer::messageHandler(AContext** context, std::string message)  // NOLINT(clang-diagnostic-shadow-field)
 {
-    return manager->messageHandler(context, move(message));
+    return server->messageHandler(context, move(message));
 }
 
 void AServer::resolveAddress(const std::string& address, const std::string& port, addrinfo*& result)
 {
-    addrinfo specs;
+    addrinfo specs;  // NOLINT(cppcoreguidelines-pro-type-member-init)
     ZeroMemory(&specs, sizeof(specs));
     specs.ai_family = AF_INET;
     specs.ai_socktype = SOCK_STREAM;
@@ -69,7 +71,7 @@ void AServer::resolveAddress(const std::string& address, const std::string& port
 
     // https://docs.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-getaddrinfo#:~:text=If%20the-,pNodeName,-parameter%20points%20to%20a%20string%20equal%20to%20%22localhost
     const int ret = getaddrinfo(
-        address == "" ? NULL : address.c_str(),
+	    address.empty() ? NULL : address.c_str(),
         port.c_str(), &specs, &result
     );
 }
