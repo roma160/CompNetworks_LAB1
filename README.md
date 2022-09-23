@@ -40,3 +40,29 @@ The following subtopics describe the communication model used.
 **№\_порта = 1037**
 
 Гра "хрестики-нолики" на полі 5х5 клітинок. Один гравець - на сервері, другий - на клієнті. Поле (матрицю символів) до клієнта передає сервер. Сервер робить хід у будь-яку пусту клітинку, стратегія не потрібна, перемогу/програш не відслідковує. Після кожного ходу клієнта сервер передає поле, додавши свій хід. Клієнт в ході гри може її завершити в будь-який момент.
+
+## Protocol look
+```mermaid
+sequenceDiagram
+participant C as Client
+participant S as Server
+
+Note right of C: loopStart()
+C->>S: "CONNECT_CLIENT"
+S->>C: "CONNECT_CLIENT"
+
+loop Game loop
+	C->>S: 25bytes: "011102..."
+	S->>C: 25bytes: "011122..."
+end
+
+Note right of C: last move
+C->>S: 25bytes: "011102..."
+alt Client won
+	S->>C: 1byte: "1"
+else Server won
+	S->>C: 26bytes: "2011122..."
+end
+
+Note over C, S: shutdown() and closesocket()
+```
