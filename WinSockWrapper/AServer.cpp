@@ -25,10 +25,16 @@ std::unique_ptr<APeer::ASockResult> AServer::Peer::loopStart(std::string& receiv
     // Receiving start message from the client
     if ((buffRes = contact(RECEIVE, (char*)receiveBuffer.c_str(), 1)
         )->type != ASockResult::OK || (unsigned char)receiveBuffer[0] != START_MESSAGE_SIZE)
-        return buffRes;
+    {
+        if (buffRes->type != ASockResult::OK) return buffRes;
+        return make_unique<ASockResult>(ASockResult::SHUTDOWN);
+    }
     if ((buffRes = contact(RECEIVE, (char*)receiveBuffer.c_str(), START_MESSAGE_SIZE)
-        )->type != ASockResult::OK || receiveBuffer != START_MESSAGE)
-        return buffRes;
+        )->type != ASockResult::OK || strcmp(receiveBuffer.c_str(), START_MESSAGE) != 0)
+    {
+        if (buffRes->type != ASockResult::OK) return buffRes;
+        return make_unique<ASockResult>(ASockResult::SHUTDOWN);
+    }
 
     // Responding him with the confirmation message
     if ((buffRes = contact(SEND, (char*)&START_MESSAGE_SIZE, 1)

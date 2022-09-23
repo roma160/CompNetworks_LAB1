@@ -5,7 +5,7 @@
 
 #include "WinSockWrapper.h"
 
-static constexpr char PORT_NUMBER[5] = "1031";
+static constexpr char PORT_NUMBER[5] = "1037";
 static constexpr int MAX_COMMAND_SIZE = 255;
 static constexpr int RETRY_NUM = 5;
 

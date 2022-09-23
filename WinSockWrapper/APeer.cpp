@@ -26,8 +26,8 @@ unique_ptr<APeer::ASockResult> APeer::contact(const SOCKET& socket, ContactType 
         code = WSAGetLastError();
 
 #ifdef _DEBUG
-        if (type == RECEIVE) cout << "r" << result << "\n";
-        else if (type == SEND) cout << "s" << result << "\n";
+        if (type == RECEIVE) cout << "r" << result << '\"' << data << '\"' << "\n";
+        else if (type == SEND) cout << "s" << result << '\"' << data << '\"' << "\n";
 #endif
 
         if (result == data_len) return make_unique<ASockResult>(ASockResult::OK);
@@ -103,7 +103,12 @@ APeer::~APeer()
 bool APeer::setSocket(SOCKET socket)  // NOLINT(clang-diagnostic-shadow)
 {
     this->socket = socket;
-    return socket != INVALID_SOCKET;
+    if(socket == INVALID_SOCKET) return false;
+
+    // https://stackoverflow.com/questions/30395258/setting-timeout-to-recv-function
+    // setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&TIMEOUT_MS, sizeof(TIMEOUT_MS));
+
+    return true;
 }
 
 bool APeer::setSocket(std::string connectionAddress, std::string connectionPort)
